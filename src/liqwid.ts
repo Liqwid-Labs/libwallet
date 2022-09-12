@@ -2,54 +2,112 @@ import { flow, pipe } from 'fp-ts/lib/function'
 import * as E from 'fp-ts/Either'
 import * as TE from 'fp-ts/TaskEither'
 
-import { cache } from './utils/fp-ts'
+import { toLovelace } from './utils/bigint'
 
 export class ImportError extends Error {}
 
-export interface Quantity { constructor(tag: string, value: number) }
-export interface MintUnderlying { constructor(quantity: Quantity) }
-export interface RedeemQTokens { constructor(quantity: Quantity) }
+export declare class MintUnderlying { constructor(quantity: bigint) }
+export declare class RedeemQTokens { constructor(quantity: bigint) }
+export declare class PubKey {}
 
-type PubKey = {
-  // marketId: 'Ada'
+export type Collateral = {
+  qAda: bigint
 }
 
-type Collateral = {
-  qAda: BigInt
-}
-
-type BorrowRepayOptions = {
-  amount: BigInt
+export type BorrowRepayOptions = {
+  amount: bigint
   collateral: Collateral
   owner: PubKey
 }
 
-// mint: (marketId: string) => (quantity: Quantity) => () => Promise<any>
-// redeem: (marketId: string) => (quantity: Quantity) => () => Promise<any>
-type LiqwidClient = {
-  mint: (marketId: 'Ada', quantity: MintUnderlying) => Promise<string>
-  redeem: (marketId: 'Ada', quantity: RedeemQTokens) => Promise<string>
-  borrow: (marketId: 'Ada', options: BorrowRepayOptions) => any
-  repay: (marketId: 'Ada', options: BorrowRepayOptions) => any
-  MintUnderlying: MintUnderlying
-  RedeemQTokens: RedeemQTokens
-  ownPubKey: (marketId: 'Ada') => Promise<PubKey>
-  queryOwnerLoans: (marketId: 'Ada', pubKey: PubKey) => any
-  queryOraclePrices: (marketId: 'Ada') => any
-  loanerInfo: (marketId: 'Ada') => any
+export type mint = (marketId: string, quantity: MintUnderlying) => Promise<string>
+export type redeem = (marketId: string, quantity: RedeemQTokens) => Promise<string>
+export type borrow = (marketId: string, options: BorrowRepayOptions) => any
+export type repay = (marketId: string, options: BorrowRepayOptions) => any
+export type ownPubKey = (marketId: string) => Promise<PubKey>
+export type queryOwnerLoans = (marketId: string, pubKey: PubKey) => any
+export type queryOraclePrices = (marketId: string) => any
+export type loanerInfo = (marketId: string) => any
+
+export type LiqwidOffchainClient = {
+  MintUnderlying: MintUnderlying,
+  RedeemQTokens: RedeemQTokens,
+  PubKey: PubKey,
+  
+  Collateral: Collateral,
+  BorrowRepayOptions: BorrowRepayOptions,
+
+  mint: mint,
+  redeem: redeem,
+  borrow: borrow,
+  repay: repay,
+  ownPubKey: ownPubKey,
+  queryOwnerLoans: queryOwnerLoans,
+  queryOraclePrices: queryOraclePrices,
+  loanerInfo: loanerInfo
 }
 
-export default pipe(
-  TE.tryCatch(
-    () => import('../../liqwid-offchain/') as Promise<LiqwidClient>,
-    () => new ImportError('Liqwid client dynamic import failed'),
-  ),
-  TE.map((client) => {
+
+export const mint = ({ mint, MintUnderlying }: LiqwidOffchainClient) =>
+  (amount: number, marketId: string) =>
+    mint(marketId, new MintUnderlying(toLovelace(amount)))
+
+export const redeem = ({ redeem, RedeemQTokens }: LiqwidOffchainClient) =>
+  (amount: number, marketId: string) =>
+    redeem(marketId, new RedeemQTokens(toLovelace(amount)))
+
+export const borrow = ({ borrow, ownPubKey }: LiqwidOffchainClient) =>
+  (amount: number, collateral: [{ amount: number }], marketId: string) =>
+    ownPubKey(marketId)
+      .then(pubKey =>
+        borrow(
+          marketId,
+          {
+            amount: toLovelace(amount),
+            collateral: { qAda: toLovelace(collateral[0].amount) },
+            owner: pubKey
+          }
+        )
+      )
+
+export const repay = ({ repay, ownPubKey }: LiqwidOffchainClient) =>
+  (amount: number, collateral: [{ amount: number }], marketId: string) =>
+    ownPubKey(marketId)
+      .then(pubKey =>
+        repay(
+          marketId,
+          {
+            amount: toLovelace(amount),
+            collateral: { qAda: toLovelace(collateral[0].amount) },
+            owner: pubKey
+          }
+        )
+      )
+
+
+export const getLoans = ({ queryOwnerLoans, ownPubKey }: LiqwidOffchainClient) =>
+  (marketId: string) =>
+    ownPubKey(marketId)
+      .then(pubKey => queryOwnerLoans(marketId, pubKey))
     
 
-    return ({
-      
-    })
-  }),
-  cache
-)
+export const getOraclePrices = ({ queryOraclePrices }: LiqwidOffchainClient) =>
+  (marketId: string) => queryOraclePrices(marketId)
+
+export const getLoanerInfo = ({ loanerInfo }: LiqwidOffchainClient) =>
+  (marketId: string) => loanerInfo(marketId)
+
+
+// export default pipe(
+//   TE.tryCatch(
+//     () => import('../../liqwid-offchain/') as Promise<LiqwidClient>,
+//     () => new ImportError('Liqwid client dynamic import failed'),
+//   ),
+//   TE.map((client) => {
+    
+
+//     return client
+//   })
+// )
+
+export default () => import('../../lq-app/liqwid-offchain')
