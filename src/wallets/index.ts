@@ -2,10 +2,9 @@ import type { WindowMaybeWithCardano } from '@cardano-sdk/cip30'
 
 import type { WalletImplType } from '../types/wallet'
 
-import { flow, identity, pipe } from 'fp-ts/lib/function'
+import { flow } from 'fp-ts/lib/function'
 import * as E from 'fp-ts/Either'
 import * as TE from 'fp-ts/TaskEither'
-import * as T from 'fp-ts/lib/Task'
 
 import { MissingWalletError, UnsupportedWalletError } from '../utils/errors'
 import * as Yoroi from './yoroi'
@@ -31,19 +30,11 @@ export const hasWallet = (name: WalletImpl['id']): name is WalletImpl['id'] =>
 
 export const getWalletImpl = flow(
   TE.fromPredicate(isWalletSupported, name => new UnsupportedWalletError(`Wallet "${name}" not supported`)),
-  TE.chainW(
-    TE.fromPredicate(hasWallet, name => new MissingWalletError(`No "${name}" wallet found`))
-  ),
+  TE.chainW(TE.fromPredicate(hasWallet, name => new MissingWalletError(`No "${name}" wallet found`))),
   TE.chainW(name =>
-    TE.tryCatch(() => (window as WindowMaybeWithCardano).cardano?.[name]?.enable() || Promise.reject(), E.toError)
+    TE.tryCatch(
+      () => (window as WindowMaybeWithCardano).cardano?.[name]?.enable() || Promise.reject(),
+      E.toError
+    )
   )
 )
-
-export class UnknownError extends Error {}
-export class FetchError extends Error {
-  statusCode: number
-  constructor(statusCode: number, message: string) {
-    super(message)
-    this.statusCode = statusCode
-  }
-}

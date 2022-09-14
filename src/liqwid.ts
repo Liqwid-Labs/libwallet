@@ -1,10 +1,7 @@
-import { flow, pipe } from 'fp-ts/lib/function'
-import * as E from 'fp-ts/Either'
+import { pipe } from 'fp-ts/lib/function'
 import * as TE from 'fp-ts/TaskEither'
-
+import { ImportError } from './utils/errors'
 import { toLovelace } from './utils/bigint'
-
-export class ImportError extends Error {}
 
 export declare class MintUnderlying { constructor(quantity: bigint) }
 export declare class RedeemQTokens { constructor(quantity: bigint) }
@@ -30,8 +27,8 @@ export type queryOraclePrices = (marketId: string) => any
 export type loanerInfo = (marketId: string) => any
 
 export type LiqwidOffchainClient = {
-  MintUnderlying: MintUnderlying,
-  RedeemQTokens: RedeemQTokens,
+  MintUnderlying: typeof MintUnderlying,
+  RedeemQTokens: typeof RedeemQTokens,
   PubKey: PubKey,
   
   Collateral: Collateral,
@@ -46,7 +43,6 @@ export type LiqwidOffchainClient = {
   queryOraclePrices: queryOraclePrices,
   loanerInfo: loanerInfo
 }
-
 
 export const mint = ({ mint, MintUnderlying }: LiqwidOffchainClient) =>
   (amount: number, marketId: string) =>
@@ -98,16 +94,21 @@ export const getLoanerInfo = ({ loanerInfo }: LiqwidOffchainClient) =>
   (marketId: string) => loanerInfo(marketId)
 
 
-// export default pipe(
-//   TE.tryCatch(
-//     () => import('../../liqwid-offchain/') as Promise<LiqwidClient>,
-//     () => new ImportError('Liqwid client dynamic import failed'),
-//   ),
-//   TE.map((client) => {
-    
+export default pipe(
+  TE.tryCatch(
+    () => import('liqwid-offchain') as Promise<LiqwidOffchainClient>,
+    () => new ImportError('Liqwid client dynamic import failed'),
+  ),
+  TE.map((client) => {
 
-//     return client
-//   })
-// )
-
-export default () => import('../../lq-app/liqwid-offchain')
+    return {
+      mint: mint(client),
+      redeem: redeem(client),
+      borrow: borrow(client),
+      repay: repay(client),
+      getLoans: getLoans(client),
+      getOraclePrices: getOraclePrices(client),
+      getLoanerInfo: getLoanerInfo(client)
+    }
+  })
+)
