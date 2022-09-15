@@ -4,7 +4,7 @@ export const name = 'Nami'
 export const origin = 'https://namiwallet.io/'
 export const id = 'nami'
 export const icon = 'https://namiwallet.io/favicon.svg?v=211b0d7bf3f14a0a7b86ec579c75946b'
-export const supported = false
+export const supported = false as const
 
 
 /**

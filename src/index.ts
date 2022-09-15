@@ -1,40 +1,89 @@
-import { flow, pipe } from 'fp-ts/lib/function'
-import * as TE from 'fp-ts/lib/TaskEither'
-import { ImportError } from './utils/errors'
-import { getWalletImpl } from './wallets'
+import PQueue from 'p-queue'
+import { ImportError, MissingWalletError } from './utils/errors'
+import { getWalletImpl, SupportedWalletIds } from './wallets'
 
 import makeLiqwid from './liqwid'
 
-export const makeWallet = async ({ name }: { name: Parameters<typeof getWalletImpl>[0] }) => {
-  const walletImpl = await getWalletImpl(name)
+export type Wallet = Awaited<ReturnType<typeof makeWallet>>
+
+export const makeWallet = async ({ id }: { id: SupportedWalletIds }) => {
+  const walletImpl = await getWalletImpl(id)
 
   return {
-    
-  }
+    id: id
+  } as const
 }
 
-export const wrapApi = <T>(func: TE.TaskEither<Error, any>): TE.TaskEither<ImportError, T> =>
-  pipe(
-    func,
-    TE.map(offchain => {
-      console.log('offchain', offchain)
-      return offchain
-    })
-  )
+type Api = {
+  [key: string]: (...args: any[]) => any
+}
 
-export const wrapFunction =
-  flow(
-    TE.map(<T, T2>(offchain: (...args: T[]) => T2) => {
-      console.log('offchain', offchain)
-      return (...args: T[]) => offchain(...args)
-    })
-  )
+export interface WrapOffchainEnvOptions<T, T2 extends Api, T3 extends Api> {
+  createEnv: (walletName: SupportedWalletIds) => Promise<T>
+  deleteEnv: (env: Awaited<ReturnType<WrapOffchainEnvOptions<T, T2, T3>['createEnv']>>) => Promise<void>
+  envApi: (apiOptions: { env?: T }) => T2
+}
 
-const redeem = pipe(
-  makeLiqwid,
-  TE.map(api => api.redeem)
-)
+export type WrapOffchainOptions<T, T2 extends Api, T3 extends Api> =
+  (WrapOffchainEnvOptions<T, T2, T3> | {
+    api: (apiOptions: {}) => T3
+  }) &
+  {
+    api?: (apiOptions: {}) => T3
+    queue?: boolean
+    wallet?: Wallet
+  }
 
-const geroWallet = makeWallet({ name: 'gero' })
+export type Offchain = typeof wrapOffchain
 
-const wrappedRedeem = wrapFunction(redeem)(geroWallet)
+export type OffchainClient<T, T2 extends Api, T3 extends Api> = {
+  setWallet: (wallet: Wallet | undefined) => void
+  getWallet: () => Wallet | undefined
+  api: T2 & T3
+}
+
+export const wrapOffchain = <T, T2 extends Api, T3 extends Api>(options: WrapOffchainOptions<T, T2, T3>): OffchainClient<T, T2, T3> => {
+  const queue = new PQueue({ concurrency: options.queue ? 1 : undefined })
+
+  const apiFunctions: T3 | {} = options.api?.({}) ?? {}
+  const envApiFunctions: T2 | {} = ('envApi' in options && options.envApi?.({})) || {}
+
+  let wallet: Wallet | undefined
+  let env: T | undefined
+
+  const getEnv = async (): Promise<T> => {
+    if (!wallet) throw new MissingWalletError('Tried generating an environment without a wallet set')
+    if (!env) env = await (options as WrapOffchainEnvOptions<T, T2, T3>).createEnv(wallet.id)
+    return env
+  }
+
+  const proxiedApi =
+    Object.fromEntries(
+      Object
+      .entries(envApiFunctions)
+      .map(([key, func]) => [
+        key,
+        (...args: Parameters<T2[number]>) => getEnv().then(env => func(env)(...args))
+      ])
+    )
+
+  const api = Object.fromEntries(
+    Object
+      .entries({
+        ...apiFunctions,
+        ...proxiedApi
+      })
+      .map(([key, func]) => [
+        key,
+        (...args: Parameters<T2[number] & T3[number]>) => queue.add(() => func(...args))
+      ])
+  ) as T2 & T3
+
+  return {
+    setWallet: (_wallet) => {
+      wallet = _wallet
+    },
+    getWallet: () => wallet,
+    api
+  }
+}

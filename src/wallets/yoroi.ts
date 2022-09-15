@@ -4,4 +4,4 @@ export const name = 'Yoroi'
 export const origin = 'https://yoroi-wallet.com/'
 export const id = 'yoroi'
 export const icon = 'https://yoroi-wallet.com/assets/favicon.png'
-export const supported = false
+export const supported = false as const

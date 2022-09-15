@@ -1,5 +1,3 @@
-import { pipe } from 'fp-ts/lib/function'
-import * as TE from 'fp-ts/TaskEither'
 import { ImportError } from './utils/errors'
 import { toLovelace } from './utils/bigint'
 
@@ -44,15 +42,26 @@ export type LiqwidOffchainClient = {
   loanerInfo: loanerInfo
 }
 
-export const mint = ({ mint, MintUnderlying }: LiqwidOffchainClient) =>
+export const importPurescript = () =>
+  import('liqwid-offchain')
+    .then(res => res as Promise<LiqwidOffchainClient>)
+    .catch(err => { throw new ImportError('Liqwid purescript client dynamic import failed') })
+
+const wrapWithImport = <T extends (...args: any[]) => any>(func: T): Promise<Awaited<ReturnType<ReturnType<T>>>> =>
+  importPurescript()
+    .then(client => func(client))
+
+export const mint = wrapWithImport(({ mint, MintUnderlying }: LiqwidOffchainClient) =>
   (amount: number, marketId: string) =>
     mint(marketId, new MintUnderlying(toLovelace(amount)))
+)
 
-export const redeem = ({ redeem, RedeemQTokens }: LiqwidOffchainClient) =>
+export const redeem = wrapWithImport(({ redeem, RedeemQTokens }: LiqwidOffchainClient) =>
   (amount: number, marketId: string) =>
     redeem(marketId, new RedeemQTokens(toLovelace(amount)))
+)
 
-export const borrow = ({ borrow, ownPubKey }: LiqwidOffchainClient) =>
+export const borrow = wrapWithImport(({ borrow, ownPubKey }: LiqwidOffchainClient) =>
   (amount: number, collateral: [{ amount: number }], marketId: string) =>
     ownPubKey(marketId)
       .then(pubKey =>
@@ -65,8 +74,9 @@ export const borrow = ({ borrow, ownPubKey }: LiqwidOffchainClient) =>
           }
         )
       )
+)
 
-export const repay = ({ repay, ownPubKey }: LiqwidOffchainClient) =>
+export const repay = wrapWithImport(({ repay, ownPubKey }: LiqwidOffchainClient) =>
   (amount: number, collateral: [{ amount: number }], marketId: string) =>
     ownPubKey(marketId)
       .then(pubKey =>
@@ -79,36 +89,18 @@ export const repay = ({ repay, ownPubKey }: LiqwidOffchainClient) =>
           }
         )
       )
+)
 
-
-export const getLoans = ({ queryOwnerLoans, ownPubKey }: LiqwidOffchainClient) =>
+export const getLoans = wrapWithImport(({ queryOwnerLoans, ownPubKey }: LiqwidOffchainClient) =>
   (marketId: string) =>
     ownPubKey(marketId)
       .then(pubKey => queryOwnerLoans(marketId, pubKey))
-    
+)
 
-export const getOraclePrices = ({ queryOraclePrices }: LiqwidOffchainClient) =>
+export const getOraclePrices = wrapWithImport(({ queryOraclePrices }: LiqwidOffchainClient) =>
   (marketId: string) => queryOraclePrices(marketId)
+)
 
-export const getLoanerInfo = ({ loanerInfo }: LiqwidOffchainClient) =>
+export const getLoanerInfo = wrapWithImport(({ loanerInfo }: LiqwidOffchainClient) =>
   (marketId: string) => loanerInfo(marketId)
-
-
-export default pipe(
-  TE.tryCatch(
-    () => import('liqwid-offchain') as Promise<LiqwidOffchainClient>,
-    () => new ImportError('Liqwid client dynamic import failed'),
-  ),
-  TE.map((client) => {
-
-    return {
-      mint: mint(client),
-      redeem: redeem(client),
-      borrow: borrow(client),
-      repay: repay(client),
-      getLoans: getLoans(client),
-      getOraclePrices: getOraclePrices(client),
-      getLoanerInfo: getLoanerInfo(client)
-    }
-  })
 )
