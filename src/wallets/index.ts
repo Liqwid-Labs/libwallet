@@ -1,4 +1,4 @@
-import type { WindowMaybeWithCardano } from '@cardano-sdk/cip30'
+import type { Cip30Wallet, WindowMaybeWithCardano } from '@cardano-sdk/cip30'
 
 import type { WalletImplType } from '../types/wallet'
 
@@ -17,19 +17,38 @@ const WALLETS_IMPLS = [
 
 export type Wallets = typeof WALLETS_IMPLS
 export type WalletImpl = Wallets[number]
-export type SupportedWalletIds = Extract<WalletImpl, { supported: true }>['id']
+export type SupportedWallets = Extract<WalletImpl, { supported: true }>
+export type SupportedWalletIds = SupportedWallets['id']
 
 export const WALLETS: WalletImplType[] = WALLETS_IMPLS
+export const SUPPORTED_WALLETS = WALLETS_IMPLS.filter(({ supported }) => supported) as SupportedWallets[]
 
-export const isWalletSupported = (name: WalletImpl['id']): name is WalletImpl['id'] =>
-  !!WALLETS.find(({ id }) => id === name)?.supported
+export const isWalletSupported = (id: WalletImpl['id']): id is WalletImpl['id'] =>
+  !!WALLETS.find(({ id: _id }) => _id === id)?.supported
 
-export const hasWallet = (name: WalletImpl['id']): name is WalletImpl['id'] =>
-  WALLETS.some(({ id }) => id === name) &&
-  !!(window as WindowMaybeWithCardano).cardano?.[name]
-
-export const getWalletImpl = (name: WalletImpl['id']) => {
-  if (!isWalletSupported(name)) throw new UnsupportedWalletError(`Wallet "${name}" not supported`)
-  if (!hasWallet(name)) throw new MissingWalletError(`No "${name}" wallet found`)
-  return (window as WindowMaybeWithCardano).cardano?.[name]?.enable()
+export const getSupportedWallet = <T extends SupportedWalletIds>(id: T) => {
+  const wallet = SUPPORTED_WALLETS.find(({ id: _id }) => _id === id)
+  if (!wallet) throw new MissingWalletError(`No "${id}" wallet found`)
+  return wallet as Extract<SupportedWallets, { id: T }>
 }
+
+export const hasWallet = (id: WalletImpl['id']): id is WalletImpl['id'] =>
+  WALLETS.some(({ id: _id }) => _id === id) &&
+  !!(window as WindowMaybeWithCardano).cardano?.[id]
+
+export const getCip30Wallet = (id: WalletImpl['id']): Cip30Wallet => {
+  const cardano = (window as WindowMaybeWithCardano).cardano
+  const wallet = cardano?.[id]
+  if (!cardano || !wallet) throw new MissingWalletError(`No wallet found`)
+  if (!isWalletSupported(id)) throw new UnsupportedWalletError(`Wallet "${id}" not supported`)
+  if (!hasWallet(id)) throw new MissingWalletError(`No "${id}" wallet found`)
+  return wallet
+}
+
+export const getWalletApi = (id: WalletImpl['id']) => getCip30Wallet(id).enable()
+
+export const getWalletImpl = <T extends SupportedWalletIds>(id: T) => ({
+  wallet: getSupportedWallet(id),
+  cip30Wallet: getCip30Wallet(id),
+  api: () => getWalletApi(id)
+})

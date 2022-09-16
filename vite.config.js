@@ -40,7 +40,25 @@ export default defineConfig({
     }
   },
   define: {
-    BROWSER_RUNTIME: true
+    BROWSER_RUNTIME: true,
+    process: {
+      env: {
+        CTL_SERVER_PORT: `8082`,
+        CTL_SERVER_HOST: `markets-testnet-api.liqwid.finance`,
+        CTL_SERVER_SECURE: `true`,
+        // CTL_SERVER_PATH: ``,
+    
+        OGMIOS_PORT: `1338`,
+        OGMIOS_HOST: `markets-testnet-api.liqwid.finance`,
+        OGMIOS_SECURE: `true`,
+        // OGMIOS_PATH: ``,
+    
+        DATUM_CACHE_PORT: `9998`,
+        DATUM_CACHE_HOST: `markets-testnet-api.liqwid.finance`,
+        DATUM_CACHE_SECURE: `true`,
+        // DATUM_CACHE_PATH: ``
+      }
+    }
   },
   build: {
     target: 'esnext',
@@ -56,6 +74,17 @@ export default defineConfig({
         NodeGlobalsPolyfillPlugin({
           process: true,
           buffer: true,
+          define: {
+            'process.env.CTL_SERVER_PORT': `"8082"`,
+            'process.env.CTL_SERVER_HOST': `"markets-testnet-api.liqwid.finance"`,
+            'process.env.CTL_SERVER_SECURE': `"true"`,
+            'process.env.OGMIOS_PORT': `"1338"`,
+            'process.env.OGMIOS_HOST': `"markets-testnet-api.liqwid.finance"`,
+            'process.env.OGMIOS_SECURE': `"true"`,
+            'process.env.DATUM_CACHE_PORT': `"9998"`,
+            'process.env.DATUM_CACHE_HOST': `"markets-testnet-api.liqwid.finance"`,
+            'process.env.DATUM_CACHE_SECURE': `"true"`,
+          }
         }),
         NodeModulesPolyfillPlugin()
       ]
@@ -64,5 +93,11 @@ export default defineConfig({
   plugins: [
     wasm(),
     rollupNodePolyFill()
-  ]
+  ],
+  server: {
+    fs: {
+      // Allow serving files from one level up to the project root
+      allow: ['..'],
+    },
+  },
 })

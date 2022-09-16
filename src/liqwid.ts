@@ -43,13 +43,18 @@ export type LiqwidOffchainClient = {
 }
 
 export const importPurescript = () =>
+  // @ts-ignore
   import('liqwid-offchain')
     .then(res => res as Promise<LiqwidOffchainClient>)
     .catch(err => { throw new ImportError('Liqwid purescript client dynamic import failed') })
 
-const wrapWithImport = <T extends (...args: any[]) => any>(func: T): Promise<Awaited<ReturnType<ReturnType<T>>>> =>
-  importPurescript()
-    .then(client => func(client))
+console.log(process.env)
+
+const wrapWithImport =
+  <T2 extends (...args: any[]) => any, T extends (imports: LiqwidOffchainClient) => T2>(importsFunc: T) =>
+    ((...args: Parameters<T2>) =>
+      importPurescript()
+        .then(client => importsFunc(client)(...args))) as ReturnType<T>
 
 export const mint = wrapWithImport(({ mint, MintUnderlying }: LiqwidOffchainClient) =>
   (amount: number, marketId: string) =>
