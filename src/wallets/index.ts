@@ -17,11 +17,11 @@ const WALLETS_IMPLS = [
 
 export type Wallets = typeof WALLETS_IMPLS
 export type WalletImpl = Wallets[number]
-export type SupportedWallets = Extract<WalletImpl, { supported: true }>
-export type SupportedWalletIds = SupportedWallets['id']
+export type SupportedWallet = Extract<WalletImpl, { supported: true }>
+export type SupportedWalletIds = SupportedWallet['id']
 
 export const WALLETS: WalletImplType[] = WALLETS_IMPLS
-export const SUPPORTED_WALLETS = WALLETS_IMPLS.filter(({ supported }) => supported) as SupportedWallets[]
+export const SUPPORTED_WALLETS = WALLETS_IMPLS.filter(({ supported }) => supported) as SupportedWallet[]
 
 export const isWalletSupported = (id: WalletImpl['id']): id is WalletImpl['id'] =>
   !!WALLETS.find(({ id: _id }) => _id === id)?.supported
@@ -29,7 +29,7 @@ export const isWalletSupported = (id: WalletImpl['id']): id is WalletImpl['id'] 
 export const getSupportedWallet = <T extends SupportedWalletIds>(id: T) => {
   const wallet = SUPPORTED_WALLETS.find(({ id: _id }) => _id === id)
   if (!wallet) throw new MissingWalletError(`No "${id}" wallet found`)
-  return wallet as Extract<SupportedWallets, { id: T }>
+  return wallet as Extract<SupportedWallet, { id: T }>
 }
 
 export const hasWallet = (id: WalletImpl['id']): id is WalletImpl['id'] =>

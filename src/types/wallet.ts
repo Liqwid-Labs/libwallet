@@ -1,4 +1,4 @@
-import type { WalletApi } from '@cardano-sdk/cip30'
+// import type { WalletApi } from '@cardano-sdk/cip30'
 
 export type WalletImplType = {
   /** Name of the target, e.g: Example */

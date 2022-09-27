@@ -1,8 +1,13 @@
+import { resolve, dirname } from 'path'
+import { fileURLToPath } from 'url'
+
 import { defineConfig } from 'vite'
 import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill'
 import { NodeModulesPolyfillPlugin } from '@esbuild-plugins/node-modules-polyfill'
 import rollupNodePolyFill from 'rollup-plugin-node-polyfills'
 import wasm from "vite-plugin-wasm"
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
   resolve: {
@@ -65,6 +70,15 @@ export default defineConfig({
     commonjsOptions: {
       include: [/liqwid-offchain/, /node_modules/],
       transformMixedEsModules: true
+    },
+    lib: {
+      entry: resolve(__dirname, 'src/index.ts'),
+      name: 'libwallet',
+      fileName: 'index',
+      formats: ['es']
+    },
+    rollupOptions: {
+      external: ['rollup-plugin-node-polyfills', 'util']
     }
   },
   optimizeDeps: {

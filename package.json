@@ -2,7 +2,7 @@
   "name": "libwallet",
   "version": "0.0.1",
   "description": "Library to interact with wallets & LiqwidLabs's CTL(Cardano Trasaction Lib)'s client",
-  "main": "index.js",
+  "main": "dist/index.js",
   "type": "module",
   "scripts": {
     "esbuild-build-watch": "node ./build.js -w",
@@ -12,8 +12,9 @@
     "_dev": "concurrently \"npm run build-watch\" \"npm run serve\"",
     "serve": "http-server ./build --proxy http://localhost:8080?",
     "dev": "vite --port 1234",
-    "build": "vite build",
-    "preview": "vite preview --port 1234"
+    "build": "vite build && npm run types",
+    "preview": "vite preview --port 1234",
+    "types": "tsc --emitDeclarationOnly"
   },
   "author": "Banou26",
   "devDependencies": {
@@ -36,6 +37,7 @@
     "node-polyfill-webpack-plugin": "^2.0.1",
     "os-browserify": "^0.3.0",
     "path": "^0.12.7",
+    "rollup-plugin-node-polyfills": "^0.2.1",
     "stream-browserify": "^3.0.0",
     "stream-http": "^3.2.0",
     "ts-loader": "^9.3.1",

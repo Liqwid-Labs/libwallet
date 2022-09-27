@@ -2,6 +2,8 @@ import PQueue from 'p-queue'
 import { MissingWalletError, WalletError } from './utils/errors'
 import { getWalletImpl, SupportedWalletIds } from './wallets'
 
+export * from './wallets'
+
 export type Wallet = Awaited<ReturnType<typeof makeWallet>>
 
 export const makeWallet = <T extends SupportedWalletIds>({ id }: { id: T }) => {
