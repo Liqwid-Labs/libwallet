@@ -45,6 +45,7 @@ export type LiqwidOffchainClient = {
 export const importPurescript = () =>
   // @ts-ignore
   import('liqwid-offchain')
+    // @ts-ignore
     .then(res => res as Promise<LiqwidOffchainClient>)
     .catch(() => { throw new ImportError('Liqwid purescript client dynamic import failed') })
 

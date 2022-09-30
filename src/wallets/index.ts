@@ -50,5 +50,5 @@ export const getWalletApi = (id: WalletImpl['id']) => getCip30Wallet(id).enable(
 export const getWalletImpl = <T extends SupportedWalletIds>(id: T) => ({
   wallet: getSupportedWallet(id),
   cip30Wallet: getCip30Wallet(id),
-  api: () => getWalletApi(id)
+  getApi: () => getWalletApi(id)
 })
