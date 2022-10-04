@@ -34,7 +34,13 @@ export const makeWallet = <T extends SupportedWalletIds>({ id }: { id: T }) => {
     inited = true
   }
  
-  // const enable = () => walletImpl.cip30Wallet.enable()
+  const enable = async () => {
+    if (_api) return _api
+    const api = await walletImpl.cip30Wallet.enable()
+    _api = api
+    if (!inited) init({ wallet, api })
+    return api
+  }
   const isEnabled = () => walletImpl.cip30Wallet.isEnabled()
 
   const getApi = async () => {
@@ -48,7 +54,7 @@ export const makeWallet = <T extends SupportedWalletIds>({ id }: { id: T }) => {
 
   const wallet = {
     id,
-    enable: () => getApi().then(() => {}),
+    enable,
     isEnabled,
     getApi,
     walletImpl,
