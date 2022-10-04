@@ -1,93 +1,68 @@
+import type { WalletApi } from '@cardano-sdk/cip30'
+import type { BaseAddress } from '@emurgo/cardano-serialization-lib-browser'
+
 import PQueue from 'p-queue'
 import { WalletError } from './utils/errors'
+import { makeEventEmitter } from './utils/events'
 import { getWalletImpl, SupportedWalletIds } from './wallets'
 
 export * from './wallets'
 
 export type Wallet = Awaited<ReturnType<typeof makeWallet>>
 
+type WalletEvents = {
+  accountChange: {
+    addresses: [BaseAddress]
+  }
+  networkChange: {
+
+  }
+}
+
 export const makeWallet = <T extends SupportedWalletIds>({ id }: { id: T }) => {
   const walletImpl = getWalletImpl(id)
+  const eventEmitter = makeEventEmitter<WalletEvents>({ events: ['accountChange', 'networkChange'] })
+  
+  let _api: WalletApi | undefined
+  let inited = false
 
-  const enable = () => walletImpl.cip30Wallet.enable()
+  const init = ({ wallet, api }: { wallet: Wallet, api: WalletApi }) => {
+    if (inited) return
+    if ('init' in walletImpl.wallet) {
+      walletImpl.wallet.init({ wallet, api })
+    }
+    inited = true
+  }
+ 
+  // const enable = () => walletImpl.cip30Wallet.enable()
   const isEnabled = () => walletImpl.cip30Wallet.isEnabled()
 
   const getApi = async () => {
+    if (_api) return _api
     if (!await walletImpl.cip30Wallet.isEnabled()) throw new WalletError(`Wallet "${id}" not enabled`)
-    return walletImpl.getApi()
+    const api = await walletImpl.getApi()
+    _api = api
+    if (!inited) init({ wallet, api })
+    return api
   }
 
-  return {
+  const wallet = {
     id,
-    enable,
+    enable: () => getApi().then(() => {}),
     isEnabled,
     getApi,
-    walletImpl
+    walletImpl,
+    terminate: () => {
+      if (!_api) return
+      if ('terminate' in walletImpl.wallet) {
+        walletImpl.wallet.terminate({ wallet, api: _api })
+      }
+    },
+    ...eventEmitter
   } as const
+
+  return wallet
 }
-
-// type Api = {
-//   [key: string]: (...args: any[]) => any
-// }
-
-// export interface WrapOffchainEnvOptions<T, T2 extends Api> {
-//   init: (walletName: SupportedWalletIds) => Promise<T>
-//   terminate: ({ context }: { context: Awaited<ReturnType<WrapOffchainEnvOptions<T, T2>['init']>> }) => Promise<void>
-//   api: (apiOptions: { context: T }) => T2
-// }
-
-// export type WrapOffchainOptions<T, T2 extends Api> =
-//   WrapOffchainEnvOptions<T, T2>
-//   & {
-//     queue?: boolean
-//     wallet?: Wallet
-//   }
-
-// export type Offchain = typeof wrapOffchain
-
-// export type OffchainClient<T, T2 extends Api> = {
-//   setContext: (context: T) => void
-//   getContext: () => T | undefined
-//   setWallet: (wallet: Wallet | undefined) => void
-//   getWallet: () => Wallet | undefined
-//   api: T2
-// }
-
-// export const wrapOffchain = <T, T2 extends Api>(options: WrapOffchainOptions<T, T2>): Promise<OffchainClient<T, T2>> => {
-//   const queue = new PQueue({ concurrency: options.queue ? 1 : Infinity })
-
-//   let wallet: Wallet | undefined = options.wallet
-//   let context: T | undefined
-
-//   const getContext = async (): Promise<T> => {
-//     if (!context) context = await (options as WrapOffchainEnvOptions<T, T2>).init(wallet.id)
-//     return context
-//   }
-
-//   const _api = options.api({ context: await getContext() })
-
-
-//   const api = Object.fromEntries(
-//     Object
-//       .entries(_api)
-//       // Wrap each API functions around a queueing system
-//       .map(([key, func]) => [
-//         key,
-//         (...args: Parameters<T2[number]>) => queue.add(() => func(...args))
-//       ] as const)
-//       // Wrap each functions around a wallet check
-//       .map(([key, func]) => [
-//         key,
-//         async (...args: Parameters<T2[number]>) => {
-//           // if (!wallet) throw new MissingWalletError('Tried calling an api function without a wallet')
-//           // if (!await wallet.isEnabled()) throw new MissingWalletError('Tried calling an api function without a wallet enabled')
-//           return func(...args)
-//         }
-//       ] as const)
-//   ) as T2
-
-//   return api
-// }
 
 export interface WrapOffchainContextOptions<T> {
   init: ({ wallet }: { wallet?: Wallet }) => Promise<T>
