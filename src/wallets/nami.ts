@@ -20,8 +20,16 @@ export const supported = true as const
  */
 export const events = ['accountChange', 'networkChange']
 
-export const init = ({ wallet, api }: { wallet: Wallet, api: WalletApi }) => {
-  ;(api as any).experimental.on('accountChange', (addresses: [string]) => {
+export type NamiInternalState = {
+  registeredEvents: boolean
+  accountChangeEventListener: (addresses: [string]) => void
+  networkChangeEventListener: (networkId: number) => void
+  enabledInterval: number
+  isEnabled: boolean
+}
+
+export const init = ({ wallet, api, state }: { wallet: Wallet, api: WalletApi, state: NamiInternalState }) => {
+  const onAccountChange = (addresses: [string]) => {
     wallet.emit(
       'accountChange',
       {
@@ -34,11 +42,34 @@ export const init = ({ wallet, api }: { wallet: Wallet, api: WalletApi }) => {
             }) as [BaseAddress]
       }
     )
-  })
-  ;(api as any).experimental.on('networkChange', (networkId: number) => wallet.emit('networkChange', {networkId }))
+  }
+
+  if (state.accountChangeEventListener) {
+    ;(api as any).experimental.off('accountChange', state.accountChangeEventListener)
+  }
+  state.accountChangeEventListener = onAccountChange
+  ;(api as any).experimental.on('accountChange', onAccountChange)
+
+
+  const onNetworkChange = (networkId: number) =>
+    wallet.emit('networkChange', {networkId })
+
+  if (state.networkChangeEventListener) {
+    ;(api as any).experimental.off('networkChange', state.networkChangeEventListener)
+  }
+  state.networkChangeEventListener = onNetworkChange
+  ;(api as any).experimental.on('networkChange', onNetworkChange)
+
+  state.isEnabled = true
+  state.enabledInterval = window.setInterval(async () => {
+    if (state.isEnabled && !(await wallet.isEnabled())) {
+    wallet.emit('disconnect', {})
+      state.isEnabled = false
+    }
+  }, 500)
 }
 
 // @ts-ignore
-export const terminate = ({ wallet, api }: { wallet: Wallet, api: WalletApi }) => {
+export const terminate = ({ wallet, api, state }: { wallet: Wallet, api: WalletApi, state: NamiInternalState }) => {
   // remove accountChange listener?
 }

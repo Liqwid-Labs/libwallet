@@ -17,28 +17,25 @@ type WalletEvents = {
   networkChange: {
 
   }
+  disconnect: {}
 }
 
 export const makeWallet = <T extends SupportedWalletIds>({ id }: { id: T }) => {
   const walletImpl = getWalletImpl(id)
-  const eventEmitter = makeEventEmitter<WalletEvents>({ events: ['accountChange', 'networkChange'] })
-  
-  let _api: WalletApi | undefined
-  let inited = false
+  const eventEmitter = makeEventEmitter<WalletEvents>({ events: ['accountChange', 'networkChange', 'disconnect'] })
 
-  const init = ({ wallet, api }: { wallet: Wallet, api: WalletApi }) => {
-    if (inited) return
-    if ('init' in walletImpl.wallet) {
-      walletImpl.wallet.init({ wallet, api })
-    }
-    inited = true
-  }
- 
+  let _api: Promise<WalletApi> | undefined
+  const walletImplState: any = {}
+
+  eventEmitter.addEventListener('disconnect', () => {
+    _api = undefined
+  })
+
   const enable = async () => {
     if (_api) return _api
-    const api = await walletImpl.cip30Wallet.enable()
-    _api = api
-    if (!inited) init({ wallet, api })
+    _api = walletImpl.cip30Wallet.enable()
+    const api = await _api
+    walletImpl.wallet.init({ wallet, api, state: walletImplState })
     return api
   }
   const isEnabled = () => walletImpl.cip30Wallet.isEnabled()
@@ -46,9 +43,9 @@ export const makeWallet = <T extends SupportedWalletIds>({ id }: { id: T }) => {
   const getApi = async () => {
     if (_api) return _api
     if (!await walletImpl.cip30Wallet.isEnabled()) throw new WalletError(`Wallet "${id}" not enabled`)
-    const api = await walletImpl.getApi()
-    _api = api
-    if (!inited) init({ wallet, api })
+    _api = walletImpl.getApi()
+    const api = await _api
+    walletImpl.wallet.init({ wallet, api, state: walletImplState })
     return api
   }
 
@@ -58,11 +55,10 @@ export const makeWallet = <T extends SupportedWalletIds>({ id }: { id: T }) => {
     isEnabled,
     getApi,
     walletImpl,
-    terminate: () => {
-      if (!_api) return
-      if ('terminate' in walletImpl.wallet) {
-        walletImpl.wallet.terminate({ wallet, api: _api })
-      }
+    terminate: async () => {
+      const api = await _api
+      if (!api) return
+      walletImpl.wallet.terminate({ wallet, api, state: walletImplState })
     },
     ...eventEmitter
   } as const

@@ -17,25 +17,42 @@ export const supported = true as const
  */
 export const events = ['accountChange']
 
-export const init = ({ wallet, api }: { wallet: Wallet, api: WalletApi }) => {
-  ;(api as any).onAccountChange((addresses: [string]) => {
-    wallet.emit(
-      'accountChange',
-      {
-        addresses:
-          addresses
-            .flat(Infinity)
-            .map(hexAddress => {
-              const address = BaseAddress.from_address(Address.from_hex(hexAddress))
-              if (!address) throw new Error('Nami accountChange did not return valid hex address')
-              return address
-            }) as [BaseAddress]
-      }
-    )
-  })
+export type GeroInternalState = {
+  registeredEvents: boolean
+  enabledInterval: number
+  isEnabled: boolean
+}
+
+export const init = ({ wallet, api, state }: { wallet: Wallet, api: WalletApi, state: GeroInternalState }) => {
+  if (!state.registeredEvents) {
+    ;(api as any).onAccountChange((addresses: [string]) => {
+      wallet.emit(
+        'accountChange',
+        {
+          addresses:
+            addresses
+              .flat(Infinity)
+              .map(hexAddress => {
+                const address = BaseAddress.from_address(Address.from_hex(hexAddress))
+                if (!address) throw new Error('Nami accountChange did not return valid hex address')
+                return address
+              }) as [BaseAddress]
+        }
+      )
+    })
+    state.registeredEvents = true
+  }
+
+  state.isEnabled = true
+  state.enabledInterval = window.setInterval(async () => {
+    if (state.isEnabled && !(await wallet.isEnabled())) {
+      wallet.emit('disconnect', {})
+      state.isEnabled = false
+    }
+  }, 500)
 }
 
 // @ts-ignore
-export const terminate = ({ wallet, api }: { wallet: Wallet, api: WalletApi }) => {
+export const terminate = ({ wallet, api, state }: { wallet: Wallet, api: WalletApi, state: GeroInternalState }) => {
   // remove accountChange listener?
 }
