@@ -1,8 +1,6 @@
-import type { WalletApi } from '@cardano-sdk/cip30'
 import type { BaseAddress } from '@emurgo/cardano-serialization-lib-browser'
 
 import PQueue from 'p-queue'
-import { WalletError } from './utils/errors'
 import { makeEventEmitter } from './utils/events'
 import { getWalletImpl, SupportedWalletIds } from './wallets'
 
@@ -20,49 +18,19 @@ type WalletEvents = {
   disconnect: {}
 }
 
-export const makeWallet = <T extends SupportedWalletIds>({ id }: { id: T }) => {
+export const makeWallet = async <T extends SupportedWalletIds>({ id }: { id: T }) => {
   const walletImpl = getWalletImpl(id)
+  const api = await walletImpl.cip30Wallet.enable()
   const eventEmitter = makeEventEmitter<WalletEvents>({ events: ['accountChange', 'networkChange', 'disconnect'] })
-
-  let _api: Promise<WalletApi> | undefined
-  const walletImplState: any = {}
-
-  eventEmitter.addEventListener('disconnect', () => {
-    _api = undefined
-  })
-
-  const enable = async () => {
-    if (_api) return _api
-    _api = walletImpl.cip30Wallet.enable()
-    const api = await _api
-    walletImpl.wallet.init({ wallet, api, state: walletImplState })
-    return api
-  }
-  const isEnabled = () => walletImpl.cip30Wallet.isEnabled()
-
-  const getApi = async () => {
-    if (_api) return _api
-    if (!await walletImpl.cip30Wallet.isEnabled()) throw new WalletError(`Wallet "${id}" not enabled`)
-    _api = walletImpl.getApi()
-    const api = await _api
-    walletImpl.wallet.init({ wallet, api, state: walletImplState })
-    return api
-  }
-
   const wallet = {
     id,
-    enable,
-    isEnabled,
-    getApi,
+    api,
     walletImpl,
-    terminate: async () => {
-      const api = await _api
-      if (!api) return
-      walletImpl.wallet.terminate({ wallet, api, state: walletImplState })
-    },
     ...eventEmitter
   } as const
 
+  walletImpl.wallet.init({ wallet, api })
+  console.log('makeWallet', wallet)
   return wallet
 }
 

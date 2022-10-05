@@ -2,6 +2,8 @@ import type { WalletApi } from '@cardano-sdk/cip30'
 
 import type { Wallet } from '..'
 
+import { isWalletEnabled } from '..'
+
 import { Address, BaseAddress } from '@emurgo/cardano-serialization-lib-browser'
 
 // IMPL IS CLOSED SOURCE
@@ -17,39 +19,30 @@ export const supported = true as const
  */
 export const events = ['accountChange']
 
-export type GeroInternalState = {
-  registeredEvents: boolean
-  enabledInterval: number
-  isEnabled: boolean
-}
-
-export const init = ({ wallet, api, state }: { wallet: Wallet, api: WalletApi, state: GeroInternalState }) => {
-  if (!state.registeredEvents) {
-    ;(api as any).onAccountChange((addresses: [string]) => {
-      wallet.emit(
-        'accountChange',
-        {
-          addresses:
-            addresses
-              .flat(Infinity)
-              .map(hexAddress => {
-                const address = BaseAddress.from_address(Address.from_hex(hexAddress))
-                if (!address) throw new Error('Nami accountChange did not return valid hex address')
-                return address
-              }) as [BaseAddress]
-        }
-      )
-    })
-    state.registeredEvents = true
+export const init = ({ wallet, api }: { wallet: Wallet, api: WalletApi }) => {
+  const onAccountChange = (addresses: [string]) => {
+    wallet.emit(
+      'accountChange',
+      {
+        addresses:
+          addresses
+            .flat(Infinity)
+            .map(hexAddress => {
+              const address = BaseAddress.from_address(Address.from_hex(hexAddress))
+              if (!address) throw new Error('Nami accountChange did not return valid hex address')
+              return address
+            }) as [BaseAddress]
+      }
+    )
   }
+  ;(api as any).onAccountChange(onAccountChange)
 
-  state.isEnabled = true
-  state.enabledInterval = window.setInterval(async () => {
-    if (state.isEnabled && !(await wallet.isEnabled())) {
-      wallet.emit('disconnect', {})
-      state.isEnabled = false
-    }
-  }, 500)
+  const interval = window.setInterval(async () => {
+    if (await isWalletEnabled(wallet.id)) return
+    wallet.emit('disconnect', {})
+    ;(api as any).experimental.off('accountChange', onAccountChange)
+    clearInterval(interval)
+  }, 100)
 }
 
 // @ts-ignore

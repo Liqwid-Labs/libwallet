@@ -11,17 +11,12 @@ export const supported = true
 
 export const events = []
 
-export type FlintInternalState = {
+// @ts-ignore
+export const init = ({ wallet, api }: { wallet: Wallet, api: WalletApi }) => {
 
 }
 
 // @ts-ignore
-export const init = ({ wallet, api, state }: { wallet: Wallet, api: WalletApi, state: FlintInternalState }) => {
-
-}
-
-// @ts-ignore
-export const terminate = ({ wallet, api, state }: { wallet: Wallet, api: WalletApi, state: FlintInternalState }) => {
+export const terminate = ({ wallet, api }: { wallet: Wallet, api: WalletApi }) => {
   // remove accountChange listener?
 }
-
