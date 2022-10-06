@@ -35,7 +35,7 @@ export const init = ({ wallet, api }: { wallet: Wallet, api: WalletApi }) => {
       }
     )
   }
-  ;(api as any).onAccountChange(onAccountChange)
+  ;(api as any).experimental.on('accountChange', onAccountChange)
 
   const interval = window.setInterval(async () => {
     if (await isWalletEnabled(wallet.id)) return
@@ -43,9 +43,4 @@ export const init = ({ wallet, api }: { wallet: Wallet, api: WalletApi }) => {
     ;(api as any).experimental.off('accountChange', onAccountChange)
     clearInterval(interval)
   }, 100)
-}
-
-// @ts-ignore
-export const terminate = ({ wallet, api, state }: { wallet: Wallet, api: WalletApi, state: GeroInternalState }) => {
-  // remove accountChange listener?
 }
