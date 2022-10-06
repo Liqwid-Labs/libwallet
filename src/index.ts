@@ -2,7 +2,7 @@ import type { BaseAddress } from '@emurgo/cardano-serialization-lib-browser'
 
 import PQueue from 'p-queue'
 import { makeEventEmitter } from './utils/events'
-import { getWalletImpl, SupportedWalletIds } from './wallets'
+import { getWalletImpl, SupportedWalletId } from './wallets'
 
 export * from './wallets'
 
@@ -18,7 +18,7 @@ type WalletEvents = {
   disconnect: {}
 }
 
-export const makeWallet = async <T extends SupportedWalletIds>({ id }: { id: T }) => {
+export const makeWallet = async <T extends SupportedWalletId>({ id }: { id: T }) => {
   const walletImpl = getWalletImpl(id)
   const api = await walletImpl.cip30Wallet.enable()
   const eventEmitter = makeEventEmitter<WalletEvents>({ events: ['accountChange', 'networkChange', 'disconnect'] })
@@ -30,7 +30,6 @@ export const makeWallet = async <T extends SupportedWalletIds>({ id }: { id: T }
   } as const
 
   walletImpl.wallet.init({ wallet, api })
-  console.log('makeWallet', wallet)
   return wallet
 }
 

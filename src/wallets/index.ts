@@ -18,7 +18,7 @@ const WALLETS_IMPLS = [
 export type Wallets = typeof WALLETS_IMPLS
 export type WalletImpl = Wallets[number]
 export type SupportedWallet = Extract<WalletImpl, { supported: true }>
-export type SupportedWalletIds = SupportedWallet['id']
+export type SupportedWalletId = SupportedWallet['id']
 
 export const WALLETS: WalletImplType[] = WALLETS_IMPLS
 export const SUPPORTED_WALLETS = WALLETS_IMPLS.filter(({ supported }) => supported) as SupportedWallet[]
@@ -26,7 +26,7 @@ export const SUPPORTED_WALLETS = WALLETS_IMPLS.filter(({ supported }) => support
 export const isWalletSupported = (id: WalletImpl['id']): id is WalletImpl['id'] =>
   !!WALLETS.find(({ id: _id }) => _id === id)?.supported
 
-export const getSupportedWallet = <T extends SupportedWalletIds>(id: T) => {
+export const getSupportedWallet = <T extends SupportedWalletId>(id: T) => {
   const wallet = SUPPORTED_WALLETS.find(({ id: _id }) => _id === id)
   if (!wallet) throw new MissingWalletError(`No "${id}" wallet found`)
   return wallet as Extract<SupportedWallet, { id: T }>
@@ -45,11 +45,11 @@ export const getCip30Wallet = (id: WalletImpl['id']): Cip30Wallet => {
   return wallet
 }
 
-export const isWalletEnabled = <T extends SupportedWalletIds>(id: T) => getCip30Wallet(id).isEnabled()
+export const isWalletEnabled = <T extends SupportedWalletId>(id: T) => getCip30Wallet(id).isEnabled()
 
 export const getWalletApi = (id: WalletImpl['id']) => getCip30Wallet(id).enable()
 
-export const getWalletImpl = <T extends SupportedWalletIds>(id: T) => ({
+export const getWalletImpl = <T extends SupportedWalletId>(id: T) => ({
   wallet: getSupportedWallet(id),
   cip30Wallet: getCip30Wallet(id),
   getApi: () => getWalletApi(id)

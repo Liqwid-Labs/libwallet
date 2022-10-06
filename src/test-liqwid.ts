@@ -1,5 +1,5 @@
 import type { WalletImpl, Wallet } from './index'
-import { wrapOffchain, SUPPORTED_WALLETS, SupportedWalletIds } from './index'
+import { wrapOffchain, SUPPORTED_WALLETS, SupportedWalletId } from './index'
 import * as liqwid from '../liqwid-offchain'
 import bigInt from 'big-integer'
 
@@ -49,7 +49,7 @@ const WALLETS_IMPL_MAP =
         walletImpl.id,
         walletImpl
       ] as const)
-  ) as { [key in SupportedWalletIds]: Extract<WalletImpl, WalletImpl & { id: key }> }
+  ) as { [key in SupportedWalletId]: Extract<WalletImpl, WalletImpl & { id: key }> }
 
 const WALLETS_SPEC_MAP = {
   [WALLETS_IMPL_MAP.flint.id]: 'ConnectToFlint',
@@ -57,7 +57,7 @@ const WALLETS_SPEC_MAP = {
   [WALLETS_IMPL_MAP.nami.id]: 'ConnectToNami'
 } as const
 
-const getWalletSpec = <T extends SupportedWalletIds>(walletId: T) => WALLETS_SPEC_MAP[walletId]
+const getWalletSpec = <T extends SupportedWalletId>(walletId: T) => WALLETS_SPEC_MAP[walletId]
 
 const makeLiqwid = (options?: { wallet?: Wallet }) => {
   const { wrapFunction } = wrapOffchain({
