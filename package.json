@@ -1,5 +1,5 @@
 {
-  "name": "libwallet",
+  "name": "@liqwid-labs/libwallet",
   "version": "0.0.1",
   "description": "Library to interact with wallets & LiqwidLabs's CTL(Cardano Trasaction Lib)'s client",
   "main": "dist/index.js",
@@ -52,10 +52,6 @@
   },
   "dependencies": {
     "@emurgo/cardano-serialization-lib-browser": "^11.0.5",
-    "agora-offchain": "file:../agora-offchain",
-    "fp-ts": "^2.12.3",
-    "fp-ts-std": "^0.14.2",
-    "liqwid-offchain": "file:liqwid-offchain",
     "p-queue": "^7.3.0",
     "reconnecting-websocket": "^4.4.0"
   }

@@ -73,12 +73,12 @@ export default defineConfig({
     },
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
-      name: 'libwallet',
+      name: '@liqwid-labs/libwallet',
       fileName: 'index',
       formats: ['es']
     },
     rollupOptions: {
-      external: ['rollup-plugin-node-polyfills', 'util']
+      external: ['rollup-plugin-node-polyfills', 'util', '@emurgo/cardano-serialization-lib-browser', 'p-queue', 'reconnecting-websocket']
     }
   },
   optimizeDeps: {

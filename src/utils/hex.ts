@@ -12,7 +12,7 @@ export const hexToUint8 = (hex: Hex) =>
     .map(h=> parseInt(h, 16))
   )
 
-export const Uint8ToHex = (buffer: Uint8Array) =>
+export const uint8ToHex = (buffer: Uint8Array) =>
   [...buffer]
     .map(x => x.toString(16).padStart(2, '0'))
     .join('')
