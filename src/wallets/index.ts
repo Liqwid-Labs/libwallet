@@ -45,9 +45,9 @@ export const getCip30Wallet = (id: WalletImpl['id']): Cip30Wallet => {
   return wallet
 }
 
-export const isWalletEnabled = <T extends SupportedWalletId>(id: T) => getCip30Wallet(id).isEnabled()
+export const isWalletEnabled = async <T extends SupportedWalletId>(id: T) => getCip30Wallet(id).isEnabled()
 
-export const getWalletApi = (id: WalletImpl['id']) => getCip30Wallet(id).enable()
+export const getWalletApi = async (id: WalletImpl['id']) => getCip30Wallet(id).enable()
 
 export const getWalletImpl = <T extends SupportedWalletId>(id: T) => ({
   wallet: getSupportedWallet(id),
