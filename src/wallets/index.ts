@@ -7,12 +7,14 @@ import * as Yoroi from './yoroi'
 import * as Gero from './gero'
 import * as Nami from './nami'
 import * as Flint from './flint'
+import * as Eternl from './eternl'
 
 const WALLETS_IMPLS = [
   Yoroi,
   Gero,
   Nami,
-  Flint
+  Flint,
+  Eternl
 ]
 
 export type Wallets = typeof WALLETS_IMPLS
