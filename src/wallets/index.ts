@@ -58,3 +58,8 @@ export const getWalletImpl = <T extends SupportedWalletId>(id: T) => ({
   cip30Wallet: getCip30Wallet(id),
   getApi: () => getWalletApi(id)
 })
+
+export const getWalletIcon = (id: WalletImpl['id']): string | undefined => {
+  const cardano = (window as WindowMaybeWithCardano).cardano
+  return cardano?.[id]?.icon;
+}
