@@ -8,13 +8,15 @@ import * as Gero from './gero'
 import * as Nami from './nami'
 import * as Flint from './flint'
 import * as Eternl from './eternl'
+import * as Lace from './lace'
 
 const WALLETS_IMPLS = [
   Yoroi,
   Gero,
   Nami,
   Flint,
-  Eternl
+  Eternl,
+  Lace
 ]
 
 export type Wallets = typeof WALLETS_IMPLS
@@ -57,3 +59,7 @@ export const getWalletImpl = <T extends SupportedWalletId>(id: T) => ({
   getApi: () => getWalletApi(id)
 })
 
+export const getWalletIcon = (id: WalletImpl['id']): string | undefined => {
+  const cardano = (window as WindowMaybeWithCardano).cardano
+  return cardano?.[id]?.icon;
+}
