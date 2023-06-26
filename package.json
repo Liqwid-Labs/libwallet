@@ -1,6 +1,6 @@
 {
   "name": "@liqwid-labs/libwallet",
-  "version": "0.0.4",
+  "version": "0.0.6",
   "description": "Library to interact with wallets & LiqwidLabs's CTL(Cardano Trasaction Lib)'s client",
   "main": "dist/index.js",
   "type": "module",
