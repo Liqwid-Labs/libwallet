@@ -9,6 +9,7 @@ import * as Nami from './nami'
 import * as Flint from './flint'
 import * as Eternl from './eternl'
 import * as Lace from './lace'
+import * as Nufi from './nufi'
 
 const WALLETS_IMPLS = [
   Yoroi,
@@ -16,7 +17,8 @@ const WALLETS_IMPLS = [
   Nami,
   Flint,
   Eternl,
-  Lace
+  Lace,
+  Nufi
 ]
 
 export type Wallets = typeof WALLETS_IMPLS
