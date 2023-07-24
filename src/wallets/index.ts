@@ -11,7 +11,7 @@ import * as Eternl from './eternl'
 import * as Lace from './lace'
 import * as Nufi from './nufi'
 
-const WALLETS_IMPLS = [
+const _WALLETS_IMPLS = [
   Yoroi,
   Gero,
   Nami,
@@ -20,6 +20,29 @@ const WALLETS_IMPLS = [
   Lace,
   Nufi
 ]
+
+const installedWallets =
+  Object
+    .entries(((window as WindowMaybeWithCardano).cardano ?? {}))
+    .filter(([_, wallet]) =>
+      wallet.apiVersion
+      && wallet.name
+      && wallet.icon
+      // @ts-expect-error
+      && wallet.enable
+      && wallet.isEnabled
+    )
+    .map(([id, wallet]) => ({
+      id,
+      name: wallet.name,
+      icon: wallet.icon,
+      supported: true,
+      init: () => {},
+      origin: ''
+    }))
+    .filter(({ id }) => !_WALLETS_IMPLS.some(({ id: _id }) => _id === id))
+
+const WALLETS_IMPLS = [..._WALLETS_IMPLS, ...installedWallets] as typeof _WALLETS_IMPLS
 
 export type Wallets = typeof WALLETS_IMPLS
 export type WalletImpl = Wallets[number]
