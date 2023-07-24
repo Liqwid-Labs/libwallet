@@ -40,6 +40,7 @@ const installedWallets =
       init: () => {},
       origin: ''
     }))
+    .filter(({ id }) => id !== 'ccvault')
     .filter(({ id }) => !_WALLETS_IMPLS.some(({ id: _id }) => _id === id))
 
 const WALLETS_IMPLS = [..._WALLETS_IMPLS, ...installedWallets] as typeof _WALLETS_IMPLS
