@@ -10,6 +10,7 @@ import * as Flint from './flint'
 import * as Eternl from './eternl'
 import * as Lace from './lace'
 import * as Nufi from './nufi'
+import * as Vespr from './vespr'
 
 const _WALLETS_IMPLS = [
   Yoroi,
@@ -18,7 +19,8 @@ const _WALLETS_IMPLS = [
   Flint,
   Eternl,
   Lace,
-  Nufi
+  Nufi,
+  Vespr
 ]
 
 const installedWallets =
