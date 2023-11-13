@@ -13,14 +13,14 @@ import * as Nufi from './nufi'
 import * as Vespr from './vespr'
 
 const _WALLETS_IMPLS = [
-  Yoroi,
-  Gero,
-  Nami,
-  Flint,
   Eternl,
+  Nami,
   Lace,
-  Nufi,
-  Vespr
+  // Yoroi,
+  // Gero,
+  // Flint,
+  // Nufi,
+  // Vespr
 ]
 
 const installedWallets =
