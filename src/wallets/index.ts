@@ -3,14 +3,14 @@ import type { Cip30Wallet, WindowMaybeWithCardano } from '@cardano-sdk/cip30'
 import type { WalletImplType } from '../types/wallet'
 
 import { MissingWalletError, UnsupportedWalletError } from '../utils/errors'
-import * as Yoroi from './yoroi'
-import * as Gero from './gero'
+// import * as Yoroi from './yoroi'
+// import * as Gero from './gero'
 import * as Nami from './nami'
-import * as Flint from './flint'
+// import * as Flint from './flint'
 import * as Eternl from './eternl'
 import * as Lace from './lace'
-import * as Nufi from './nufi'
-import * as Vespr from './vespr'
+// import * as Nufi from './nufi'
+// import * as Vespr from './vespr'
 
 const _WALLETS_IMPLS = [
   Eternl,
